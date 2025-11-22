@@ -1,0 +1,23 @@
+# FILE: /public/.htaccess
+# SplashProjects - Multi-tenant SaaS Platform
+# Apache URL rewriting configuration
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect to public folder if accessed from root
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Rewrite all requests to index.php
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Prevent access to .env files
+<FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
