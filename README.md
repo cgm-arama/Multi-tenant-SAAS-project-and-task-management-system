@@ -48,7 +48,7 @@ A complete multi-tenant SaaS project management platform built with PHP and MySQ
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/SplashProjects.git
+git clone https://github.com/ahmedsaadawi13/SplashProjects.git
 cd SplashProjects
 ```
 
@@ -424,7 +424,7 @@ This project is open-source software licensed under the MIT License.
 ## Support
 
 For issues, questions, or contributions:
-- GitHub Issues: https://github.com/yourusername/SplashProjects/issues
+- GitHub Issues: https://github.com/ahmedsaadawi13/SplashProjects/issues
 - Documentation: See `/docs` folder
 
 ## Credits
