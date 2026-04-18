@@ -18,7 +18,7 @@ echo "===========================================\n\n";
 $passed = 0;
 $failed = 0;
 
-// Test 1: Database Connection
+
 echo "Test 1: Database Connection... ";
 try {
     $db = Database::getInstance()->getConnection();
@@ -34,7 +34,7 @@ try {
     $failed++;
 }
 
-// Test 2: Tenant Isolation
+
 echo "Test 2: Tenant Isolation... ";
 try {
     require_once __DIR__ . '/../app/models/User.php';

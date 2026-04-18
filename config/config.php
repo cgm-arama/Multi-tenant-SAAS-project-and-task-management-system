@@ -1,12 +1,7 @@
 <?php
 // FILE: /config/config.php
 
-/**
- * Main Configuration File
- * SplashProjects - Multi-tenant SaaS Platform
- *
- * This file contains application-wide configuration settings.
- */
+
 
 // Load environment variables from .env file if it exists
 if (file_exists(__DIR__ . '/../.env')) {

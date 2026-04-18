@@ -1,7 +1,4 @@
--- FILE: /database.sql
--- SplashProjects - Multi-tenant SaaS Platform
--- Database Schema and Seed Data
--- MySQL/MariaDB - InnoDB Engine
+
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";

@@ -1,12 +1,4 @@
 <?php
-// FILE: /config/database.php
-
-/**
- * Database Configuration
- * SplashProjects - Multi-tenant SaaS Platform
- *
- * Database connection settings.
- */
 
 return [
     'host' => getenv('DB_HOST') ?: 'localhost',
