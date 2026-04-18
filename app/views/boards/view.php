@@ -6,97 +6,101 @@
         <div class="container">
             <div class="breadcrumb">
                 <a href="<?php echo BASE_URL; ?>/projects">Projects</a> /
-                <a href="<?php echo BASE_URL; ?>/projects/<?php echo $project['id']; ?>"><?php echo e($project['name']); ?></a> /
+                <a href="<?php echo BASE_URL; ?>/projects/view/<?php echo $project['id']; ?>">
+                    <?php echo e($project['name']); ?>
+                </a> /
                 <?php echo e($board['name']); ?>
             </div>
+
             <h1><?php echo e($board['name']); ?></h1>
-            <button class="btn btn-primary" onclick="showCreateTaskModal()">+ Add Task</button>
+            <button class="btn btn-primary" onclick="document.getElementById('createTaskModal').style.display='block'">
+                + Add Task
+            </button>
         </div>
     </div>
 
     <div class="board-container">
         <div class="kanban-board">
+
             <?php foreach ($board['columns'] as $column): ?>
-                <div class="kanban-column" data-column-id="<?php echo $column['id']; ?>">
+                <div class="kanban-column">
+
                     <div class="column-header">
                         <h3><?php echo e($column['name']); ?></h3>
-                        <span class="task-count"><?php echo count($column['tasks']); ?></span>
-                        <?php if ($column['wip_limit']): ?>
-                            <span class="wip-limit">WIP: <?php echo $column['wip_limit']; ?></span>
-                        <?php endif; ?>
                     </div>
 
-                    <div class="column-tasks" data-column-id="<?php echo $column['id']; ?>">
-                        <?php foreach ($column['tasks'] as $task): ?>
-                            <div class="task-card" data-task-id="<?php echo $task['id']; ?>" draggable="true">
-                                <h4>
-                                    <a href="<?php echo BASE_URL; ?>/tasks/<?php echo $task['id']; ?>">
-                                        <?php echo e($task['title']); ?>
-                                    </a>
-                                </h4>
-                                <?php if ($task['description']): ?>
-                                    <p class="task-description"><?php echo e(substr($task['description'], 0, 100)); ?></p>
-                                <?php endif; ?>
+                    <div class="column-tasks">
 
-                                <div class="task-meta">
-                                    <?php if ($task['due_date']): ?>
-                                        <span class="task-due <?php echo strtotime($task['due_date']) < time() ? 'overdue' : ''; ?>">
-                                            <?php echo date('M d', strtotime($task['due_date'])); ?>
-                                        </span>
+                        <?php if (!empty($column['tasks'])): ?>
+                            <?php foreach ($column['tasks'] as $task): ?>
+                                
+                                <div class="task-card">
+
+                                    <h4><?php echo e($task['title']); ?></h4>
+
+                                    <?php if (!empty($task['description'])): ?>
+                                        <p><?php echo e($task['description']); ?></p>
                                     <?php endif; ?>
 
-                                    <span class="priority-<?php echo $task['priority']; ?>">
-                                        <?php echo ucfirst($task['priority']); ?>
-                                    </span>
+                                    <div class="task-meta">
 
-                                    <?php if ($task['assignee_name']): ?>
-                                        <span class="assignee" title="<?php echo e($task['assignee_name']); ?>">
-                                            <?php echo substr($task['assignee_name'], 0, 1); ?>
-                                        </span>
-                                    <?php endif; ?>
+                                        <!-- Overdue logic FIXED -->
+                                        <?php if (!empty($task['due_date'])): ?>
+                                            <span class="task-due 
+                                            <?php 
+                                            if (strtotime($task['due_date']) < time() && $task['status'] !== 'completed') {
+                                                echo 'overdue';
+                                            }
+                                            ?>">
+                                                <?php echo date('M d', strtotime($task['due_date'])); ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                        <span><?php echo ucfirst($task['priority']); ?></span>
+
+                                    </div>
+
+                                    <!-- ✔ DONE BUTTON -->
+                                    <form method="POST" action="<?php echo BASE_URL; ?>/tasks/update/<?php echo $task['id']; ?>">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+                                            <input type="hidden" name="status" value="completed">
+
+                                            <button type="submit" class="btn btn-success" style="margin-top:5px;">
+                                              ✔ Done
+                                             </button>
+                                    </form>
+
                                 </div>
 
-                                <div class="task-indicators">
-                                    <?php if ($task['comment_count'] > 0): ?>
-                                        <span title="Comments">💬 <?php echo $task['comment_count']; ?></span>
-                                    <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
 
-                                    <?php if ($task['attachment_count'] > 0): ?>
-                                        <span title="Attachments">📎 <?php echo $task['attachment_count']; ?></span>
-                                    <?php endif; ?>
-
-                                    <?php if ($task['checklist_total'] > 0): ?>
-                                        <span title="Checklist">
-                                            ✓ <?php echo $task['checklist_completed']; ?>/<?php echo $task['checklist_total']; ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
 
-            <div class="kanban-column add-column">
-                <button class="btn-add-column" onclick="showAddColumnModal()">+ Add Column</button>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- Create Task Modal -->
-<div id="createTaskModal" class="modal" style="display: none;">
+<!-- TASK MODAL -->
+<div id="createTaskModal" class="modal" style="display:none;">
     <div class="modal-content">
-        <span class="close" onclick="closeModal('createTaskModal')">&times;</span>
+        <span onclick="document.getElementById('createTaskModal').style.display='none'" style="cursor:pointer;">&times;</span>
+
         <h2>Create Task</h2>
-        <form id="createTaskForm" onsubmit="createTask(event)">
+
+        <form method="POST" action="<?php echo BASE_URL; ?>/tasks/create">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+            <input type="hidden" name="board_id" value="<?php echo $board['id']; ?>">
 
             <div class="form-group">
                 <label>Column</label>
                 <select name="column_id" required>
                     <?php foreach ($board['columns'] as $column): ?>
-                        <option value="<?php echo $column['id']; ?>"><?php echo e($column['name']); ?></option>
+                        <option value="<?php echo $column['id']; ?>">
+                            <?php echo e($column['name']); ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -108,7 +112,7 @@
 
             <div class="form-group">
                 <label>Description</label>
-                <textarea name="description" rows="3"></textarea>
+                <textarea name="description"></textarea>
             </div>
 
             <div class="form-group">
@@ -116,7 +120,9 @@
                 <select name="assigned_to">
                     <option value="">Unassigned</option>
                     <?php foreach ($members as $member): ?>
-                        <option value="<?php echo $member['id']; ?>"><?php echo e($member['name']); ?></option>
+                        <option value="<?php echo $member['id']; ?>">
+                            <?php echo e($member['name']); ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -140,9 +146,3 @@
         </form>
     </div>
 </div>
-
-<script>
-const BASE_URL = '<?php echo BASE_URL; ?>';
-const BOARD_ID = <?php echo $board['id']; ?>;
-</script>
-<script src="<?php echo BASE_URL; ?>/assets/js/kanban.js"></script>

@@ -63,12 +63,12 @@ class Controller
      * Require authentication - redirect to login if not authenticated
      */
     protected function requireAuth()
-    {
-        if (!$this->isAuthenticated()) {
-            $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
-            $this->redirect('/auth/login');
-        }
+{
+    if (!$this->isAuthenticated()) {
+        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+        $this->redirect('/auth/login');
     }
+}
 
     /**
      * Check if user has a specific role

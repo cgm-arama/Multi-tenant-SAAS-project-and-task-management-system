@@ -80,44 +80,77 @@ class Router
      * @param array $url
      */
     private function handleWebRoute($url)
-    {
-        // Look for controller
-        if (isset($url[0])) {
-            $controllerName = ucfirst($url[0]) . 'Controller';
-            $controllerPath = __DIR__ . '/../controllers/' . $controllerName . '.php';
+{
+    $route = $url[0] ?? '';
 
-            if (file_exists($controllerPath)) {
-                $this->controller = $controllerName;
-                unset($url[0]);
-            }
-        }
+    $routeMap = [
+        'dashboard' => ['HomeController', 'dashboard'],
+        'projects' => ['ProjectController', null],
+        'boards' => ['BoardController', null],
+        'auth' => ['AuthController', null],
+        'home' => ['HomeController', null],
+        // add these only if the files exist
+        'team' => ['TeamController', null],
+        'notifications' => ['NotificationController', null],
+    ];
 
-        // Require controller file
-        $controllerPath = __DIR__ . '/../controllers/' . $this->controller . '.php';
+    if ($route && isset($routeMap[$route])) {
+        $mappedController = $routeMap[$route][0];
+        $mappedMethod = $routeMap[$route][1];
+
+        $controllerPath = __DIR__ . '/../controllers/' . $mappedController . '.php';
 
         if (file_exists($controllerPath)) {
             require_once $controllerPath;
-            $this->controller = new $this->controller();
-        } else {
-            // 404 error
-            http_response_code(404);
-            die("Controller not found");
-        }
+            $this->controller = new $mappedController();
 
-        // Look for method
-        if (isset($url[1])) {
-            if (method_exists($this->controller, $url[1])) {
-                $this->method = $url[1];
-                unset($url[1]);
+            unset($url[0]);
+            $url = array_values($url);
+
+            if ($mappedMethod) {
+                $this->method = $mappedMethod;
+            } elseif (isset($url[0]) && method_exists($this->controller, $url[0])) {
+                $this->method = $url[0];
+                unset($url[0]);
+                $url = array_values($url);
             }
+
+            $this->params = $url ?: [];
+            call_user_func_array([$this->controller, $this->method], $this->params);
+            return;
         }
-
-        // Get params
-        $this->params = $url ? array_values($url) : [];
-
-        // Call controller method with params
-        call_user_func_array([$this->controller, $this->method], $this->params);
     }
+
+    if (isset($url[0])) {
+        $controllerName = ucfirst($url[0]) . 'Controller';
+        $controllerPath = __DIR__ . '/../controllers/' . $controllerName . '.php';
+
+        if (file_exists($controllerPath)) {
+            $this->controller = $controllerName;
+            unset($url[0]);
+        }
+    }
+
+    $controllerPath = __DIR__ . '/../controllers/' . $this->controller . '.php';
+
+    if (file_exists($controllerPath)) {
+        require_once $controllerPath;
+        $this->controller = new $this->controller();
+    } else {
+        http_response_code(404);
+        die("Controller not found");
+    }
+
+    if (isset($url[1])) {
+        if (method_exists($this->controller, $url[1])) {
+            $this->method = $url[1];
+            unset($url[1]);
+        }
+    }
+
+    $this->params = $url ? array_values($url) : [];
+    call_user_func_array([$this->controller, $this->method], $this->params);
+}
 
     /**
      * Parse URL from request

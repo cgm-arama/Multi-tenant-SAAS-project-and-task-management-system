@@ -11,6 +11,8 @@ class BoardController extends Controller
 {
     /**
      * Show board with Kanban view
+     *
+     * @param int $boardId
      */
     public function view($boardId)
     {
@@ -31,8 +33,11 @@ class BoardController extends Controller
 
         // Get tasks for each column
         $taskModel = $this->model('Task');
-        foreach ($board['columns'] as &$column) {
-            $column['tasks'] = $taskModel->getTasksByColumn($column['id']);
+        if (!empty($board['columns'])) {
+            foreach ($board['columns'] as &$column) {
+                $column['tasks'] = $taskModel->getTasksByColumn($column['id']);
+            }
+            unset($column);
         }
 
         // Get project details
@@ -59,18 +64,20 @@ class BoardController extends Controller
 
     /**
      * Create new board
+     *
+     * @param int $projectId
      */
     public function create($projectId)
     {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/projects/' . $projectId);
+            $this->redirect('/projects/view/' . $projectId);
         }
 
         // Validate CSRF
         if (!$this->validateCSRF($_POST['csrf_token'] ?? '')) {
-            $this->redirect('/projects/' . $projectId . '?error=invalid_request');
+            $this->redirect('/projects/view/' . $projectId . '?error=invalid_request');
         }
 
         // Check project access
@@ -82,10 +89,13 @@ class BoardController extends Controller
         $name = $this->sanitize($_POST['name'] ?? '');
         $description = $this->sanitize($_POST['description'] ?? '');
 
-        $errors = $this->validate(['name' => $name], ['name' => 'required|min:2']);
+        $errors = $this->validate(
+            ['name' => $name],
+            ['name' => 'required|min:2']
+        );
 
         if (!empty($errors)) {
-            $this->redirect('/projects/' . $projectId . '?error=validation_failed');
+            $this->redirect('/projects/view/' . $projectId . '?error=validation_failed');
         }
 
         try {
@@ -107,27 +117,28 @@ class BoardController extends Controller
                 'message' => Auth::user()['name'] . ' created board "' . $name . '"'
             ]);
 
-            $this->redirect('/boards/' . $boardId);
-
+            $this->redirect('/boards/view/' . $boardId);
         } catch (Exception $e) {
-            $this->redirect('/projects/' . $projectId . '?error=create_failed');
+            $this->redirect('/projects/view/' . $projectId . '?error=create_failed');
         }
     }
 
     /**
      * Add column to board
+     *
+     * @param int $boardId
      */
     public function addColumn($boardId)
     {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/boards/' . $boardId);
+            $this->redirect('/boards/view/' . $boardId);
         }
 
         // Validate CSRF
         if (!$this->validateCSRF($_POST['csrf_token'] ?? '')) {
-            $this->redirect('/boards/' . $boardId . '?error=invalid_request');
+            $this->redirect('/boards/view/' . $boardId . '?error=invalid_request');
         }
 
         $boardModel = $this->model('Board');
@@ -156,15 +167,16 @@ class BoardController extends Controller
                 'position' => 999
             ]);
 
-            $this->redirect('/boards/' . $boardId . '?success=column_added');
-
+            $this->redirect('/boards/view/' . $boardId . '?success=column_added');
         } catch (Exception $e) {
-            $this->redirect('/boards/' . $boardId . '?error=add_column_failed');
+            $this->redirect('/boards/view/' . $boardId . '?error=add_column_failed');
         }
     }
 
     /**
      * Delete column
+     *
+     * @param int $columnId
      */
     public function deleteColumn($columnId)
     {
@@ -197,7 +209,6 @@ class BoardController extends Controller
         try {
             $columnModel->delete($columnId);
             $this->json(['success' => true, 'message' => 'Column deleted']);
-
         } catch (Exception $e) {
             $this->json(['error' => 'Delete failed'], 500);
         }

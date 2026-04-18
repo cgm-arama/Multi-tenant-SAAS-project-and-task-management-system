@@ -31,7 +31,7 @@
                 <div class="project-card">
                     <div class="project-color" style="background-color: <?php echo e($project['color']); ?>"></div>
                     <h3>
-                        <a href="<?php echo BASE_URL; ?>/projects/<?php echo $project['id']; ?>">
+                        <a href="<?php echo BASE_URL; ?>/projects/view/<?php echo $project['id']; ?>">
                             <?php echo e($project['name']); ?>
                         </a>
                     </h3>
@@ -39,7 +39,7 @@
                     <div class="project-meta">
                         <span>Owner: <?php echo e($project['owner_name']); ?></span>
                         <span><?php echo $project['task_count']; ?> tasks</span>
-                        <span class="status-<?php echo $project['status']; ?>"><?php echo ucfirst($project['status']); ?></span>
+                        <span class="status-<?php echo e($project['status']); ?>"><?php echo ucfirst($project['status']); ?></span>
                     </div>
                     <div class="project-progress">
                         <?php
@@ -56,18 +56,18 @@
             <?php endforeach; ?>
         </div>
 
-        <?php if ($pagination['total_pages'] > 1): ?>
+        <?php if (($pagination['total_pages'] ?? 1) > 1): ?>
             <div class="pagination">
-                <?php if ($pagination['has_prev']): ?>
+                <?php if (!empty($pagination['has_prev'])): ?>
                     <a href="?page=<?php echo $pagination['page'] - 1; ?>" class="btn">Previous</a>
                 <?php endif; ?>
 
                 <span>Page <?php echo $pagination['page']; ?> of <?php echo $pagination['total_pages']; ?></span>
 
-                <?php if ($pagination['has_next']): ?>
+                <?php if (!empty($pagination['has_next'])): ?>
                     <a href="?page=<?php echo $pagination['page'] + 1; ?>" class="btn">Next</a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     <?php endif; ?>
-</div>
+ </div>

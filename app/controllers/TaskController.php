@@ -163,93 +163,45 @@ class TaskController extends Controller
      * Update task
      */
     public function update($taskId)
-    {
-        $this->requireAuth();
+{
+    $this->requireAuth();
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->json(['error' => 'Invalid request method'], 405);
-        }
+    // Accept POST safely
+    $input = $_POST;
 
-        // Parse JSON body
-        $input = json_decode(file_get_contents('php://input'), true);
-
-        if (!$input) {
-            $input = $_POST;
-        }
-
-        // Validate CSRF
-        if (!$this->validateCSRF($input['csrf_token'] ?? '')) {
-            $this->json(['error' => 'Invalid CSRF token'], 403);
-        }
-
-        $taskModel = $this->model('Task');
-        $task = $taskModel->find($taskId);
-
-        if (!$task) {
-            $this->json(['error' => 'Task not found'], 404);
-        }
-
-        // Build update data
-        $updateData = [];
-
-        if (isset($input['title'])) {
-            $updateData['title'] = $this->sanitize($input['title']);
-        }
-
-        if (isset($input['description'])) {
-            $updateData['description'] = $this->sanitize($input['description']);
-        }
-
-        if (isset($input['assigned_to'])) {
-            $updateData['assigned_to'] = !empty($input['assigned_to']) ? (int)$input['assigned_to'] : null;
-        }
-
-        if (isset($input['priority'])) {
-            $updateData['priority'] = $input['priority'];
-        }
-
-        if (isset($input['status'])) {
-            $updateData['status'] = $input['status'];
-        }
-
-        if (isset($input['due_date'])) {
-            $updateData['due_date'] = $input['due_date'] ?: null;
-        }
-
-        try {
-            $taskModel->update($taskId, $updateData);
-
-            // Log activity
-            $activityModel = $this->model('Activity');
-            $activityModel->log([
-                'user_id' => $this->getUserId(),
-                'project_id' => $task['project_id'],
-                'task_id' => $taskId,
-                'action_type' => 'task_updated',
-                'message' => Auth::user()['name'] . ' updated task "' . $task['title'] . '"'
-            ]);
-
-            // Create notification if assignee changed
-            if (isset($updateData['assigned_to']) && $updateData['assigned_to'] != $task['assigned_to'] && $updateData['assigned_to']) {
-                $notificationModel = $this->model('Notification');
-                $notificationModel->createNotification([
-                    'user_id' => $updateData['assigned_to'],
-                    'type' => 'task_assigned',
-                    'title' => 'Task assigned',
-                    'message' => 'You have been assigned to "' . $task['title'] . '"',
-                    'link' => '/tasks/' . $taskId
-                ]);
-            }
-
-            $updatedTask = $taskModel->getTaskWithDetails($taskId);
-
-            $this->json(['success' => true, 'task' => $updatedTask]);
-
-        } catch (Exception $e) {
-            $this->json(['error' => 'Update failed'], 500);
-        }
+    if (empty($input)) {
+        $this->redirect('/dashboard?error=no_data');
     }
 
+    // CSRF check
+    if (!$this->validateCSRF($input['csrf_token'] ?? '')) {
+        $this->redirect('/dashboard?error=csrf_failed');
+    }
+
+    $taskModel = $this->model('Task');
+    $task = $taskModel->find($taskId);
+
+    if (!$task) {
+        $this->redirect('/dashboard?error=task_not_found');
+    }
+
+    try {
+        // Update ONLY status
+        $taskModel->update($taskId, [
+            'status' => $input['status'] ?? 'completed'
+        ]);
+
+        // 🔥 ALWAYS go back to board
+        if (!empty($_SERVER['HTTP_REFERER'])) {
+            $this->redirect($_SERVER['HTTP_REFERER']);
+        } else {
+            $this->redirect('/boards/view/' . $task['board_id']);
+        }
+
+    } catch (Exception $e) {
+        $this->redirect('/dashboard?error=update_failed');
+    }
+}
     /**
      * Move task to different column (drag and drop)
      */

@@ -13,21 +13,19 @@ class AuthController extends Controller
      * Show login form
      */
     public function login()
-    {
-        // Redirect if already authenticated
-        if ($this->isAuthenticated()) {
-            $this->redirect('/dashboard');
-        }
-
-        $data = [
-            'csrf_token' => $this->getCSRF(),
-            'error' => $_GET['error'] ?? null,
-            'success' => Session::getFlash('success')
-        ];
-
-        $this->view->render('auth/login', $data, 'auth');
+{
+    if ($this->isAuthenticated()) {
+        $this->redirect('/dashboard');
     }
 
+    $data = [
+        'csrf_token' => $this->getCSRF(),
+        'error' => $_GET['error'] ?? null,
+        'success' => Session::getFlash('success')
+    ];
+
+    $this->view->render('auth/login', $data, 'auth');
+}
     /**
      * Process login
      */
@@ -85,7 +83,7 @@ class AuthController extends Controller
         $userModel->updateLastLogin($user['id']);
 
         // Redirect to intended page or dashboard
-        $redirect = $_SESSION['redirect_after_login'] ?? '/dashboard';
+        $redirect = $_SESSION['redirect_after_login'] ?? '/home/dashboard';
         unset($_SESSION['redirect_after_login']);
         $this->redirect($redirect);
     }

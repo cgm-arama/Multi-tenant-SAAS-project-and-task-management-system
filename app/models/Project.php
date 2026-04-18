@@ -30,7 +30,6 @@ class Project extends Model
 
         $params = ['tenant_id' => $this->tenantId];
 
-        // Apply filters
         if (!empty($filters['status'])) {
             $sql .= " AND p.status = :status";
             $params['status'] = $filters['status'];
@@ -42,8 +41,9 @@ class Project extends Model
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (p.name LIKE :search OR p.description LIKE :search)";
-            $params['search'] = "%{$filters['search']}%";
+            $sql .= " AND (p.name LIKE :search_name OR p.description LIKE :search_description)";
+            $params['search_name'] = "%{$filters['search']}%";
+            $params['search_description'] = "%{$filters['search']}%";
         }
 
         $sql .= " ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset";
@@ -51,11 +51,11 @@ class Project extends Model
         $stmt = $this->db->prepare($sql);
 
         foreach ($params as $key => $value) {
-            $stmt->bindValue(":{$key}", $value);
+            $stmt->bindValue(':' . $key, $value);
         }
 
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll();
@@ -76,11 +76,11 @@ class Project extends Model
                        (SELECT COUNT(*) FROM project_members WHERE project_id = p.id) as member_count
                 FROM {$this->table} p
                 LEFT JOIN users u ON p.owner_id = u.id
-                WHERE p.id = :id AND p.tenant_id = :tenant_id
+                WHERE p.id = :project_id AND p.tenant_id = :tenant_id
                 LIMIT 1";
 
         $stmt = $this->query($sql, [
-            'id' => $projectId,
+            'project_id' => $projectId,
             'tenant_id' => $this->tenantId
         ]);
 
@@ -112,11 +112,11 @@ class Project extends Model
         $stmt = $this->query($sql, $params);
         $result = $stmt->fetch();
 
-        return (int)$result['count'];
+        return (int) $result['count'];
     }
 
     /**
-     * Get projects accessible by user (including guest access)
+     * Get projects accessible by user
      *
      * @param int $userId
      * @param int $limit
@@ -131,15 +131,16 @@ class Project extends Model
                 LEFT JOIN users u ON p.owner_id = u.id
                 LEFT JOIN project_members pm ON p.id = pm.project_id
                 WHERE p.tenant_id = :tenant_id
-                AND (p.owner_id = :user_id OR pm.user_id = :user_id)
+                AND (p.owner_id = :owner_user_id OR pm.user_id = :member_user_id)
                 ORDER BY p.created_at DESC
                 LIMIT :limit OFFSET :offset";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':tenant_id', $this->tenantId, PDO::PARAM_INT);
-        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':tenant_id', (int) $this->tenantId, PDO::PARAM_INT);
+        $stmt->bindValue(':owner_user_id', (int) $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':member_user_id', (int) $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll();
@@ -159,16 +160,17 @@ class Project extends Model
                 LEFT JOIN project_members pm ON p.id = pm.project_id
                 WHERE p.id = :project_id
                 AND p.tenant_id = :tenant_id
-                AND (p.owner_id = :user_id OR pm.user_id = :user_id)";
+                AND (p.owner_id = :owner_user_id OR pm.user_id = :member_user_id)";
 
         $stmt = $this->query($sql, [
             'project_id' => $projectId,
             'tenant_id' => $this->tenantId,
-            'user_id' => $userId
+            'owner_user_id' => $userId,
+            'member_user_id' => $userId
         ]);
 
         $result = $stmt->fetch();
-        return (int)$result['count'] > 0;
+        return (int) $result['count'] > 0;
     }
 
     /**

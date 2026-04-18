@@ -1,15 +1,10 @@
 <?php
 // FILE: /app/models/Usage.php
 
-/**
- * Usage Model
- * SplashProjects - Multi-tenant SaaS Platform
- *
- * Tracks resource usage for quota enforcement.
- */
+
 class Usage extends Model
 {
-    protected $table = 'usage';
+    protected $table = '`usage`';
 
     /**
      * Get usage by tenant
@@ -37,28 +32,23 @@ class Usage extends Model
     {
         $tenantId = $tenantId ?: $this->tenantId;
 
-        // Count projects
         $projectModel = new Project();
         $projectModel->setTenantId($tenantId);
         $projectsCount = $projectModel->countProjects();
 
-        // Count users
         $userModel = new User();
         $userModel->setTenantId($tenantId);
         $usersCount = $userModel->countByTenant($tenantId);
 
-        // Count tasks
         $taskModel = new Task();
         $taskModel->setTenantId($tenantId);
         $tasksCount = $taskModel->countTasks();
 
-        // Get storage used
         $attachmentModel = new Attachment();
         $attachmentModel->setTenantId($tenantId);
         $storageBytes = $attachmentModel->getTotalStorageUsed($tenantId);
         $storageMB = round($storageBytes / (1024 * 1024), 2);
 
-        // Check if usage record exists
         $existing = $this->getUsageByTenant($tenantId);
 
         $data = [
@@ -69,7 +59,6 @@ class Usage extends Model
         ];
 
         if ($existing) {
-            // Update existing record
             $sql = "UPDATE {$this->table}
                     SET projects_count = :projects_count,
                         users_count = :users_count,
@@ -81,7 +70,6 @@ class Usage extends Model
             $data['tenant_id'] = $tenantId;
             $this->query($sql, $data);
         } else {
-            // Create new record
             $data['tenant_id'] = $tenantId;
             $this->create($data);
         }
@@ -92,7 +80,7 @@ class Usage extends Model
     /**
      * Increment usage counter
      *
-     * @param string $resource (projects, users, tasks)
+     * @param string $resource
      * @param int $amount
      * @param int|null $tenantId
      * @return bool
@@ -118,7 +106,7 @@ class Usage extends Model
     /**
      * Decrement usage counter
      *
-     * @param string $resource (projects, users, tasks)
+     * @param string $resource
      * @param int $amount
      * @param int|null $tenantId
      * @return bool
